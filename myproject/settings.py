@@ -284,7 +284,7 @@ DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = os.getenv(
     "DJANGO_ALLOWED_HOSTS",
-    "127.0.0.1,localhost,edprintingbackend.onrender.com",
+    "127.0.0.1,localhost,edprintingbackend.onrender.com, https://spos-backend-sdpz.onrender.com",
 ).split(",")
 
 # ---------------------------------------------------------------------------
@@ -292,7 +292,7 @@ ALLOWED_HOSTS = os.getenv(
 # ---------------------------------------------------------------------------
 CORS_ALLOWED_ORIGINS = os.getenv(
     "DJANGO_CORS_ALLOWED_ORIGINS",
-    "http://localhost:3000,https://edprintingpos.netlify.app",
+    "http://localhost:3000,https://edprintingpos.netlify.app, https://spos-backend-sdpz.onrender.com",
 ).split(",")
 
 CORS_ALLOW_ALL_ORIGINS = False  # never True in production
@@ -315,7 +315,7 @@ CORS_ALLOW_HEADERS = [
 
 CSRF_TRUSTED_ORIGINS = os.getenv(
     "DJANGO_CSRF_TRUSTED_ORIGINS",
-    "http://localhost:3000,https://edprintingpos.netlify.app,https://edprintingbackend.onrender.com",
+    "http://localhost:3000,https://edprintingpos.netlify.app,https://edprintingbackend.onrender.com, https://spos-backend-sdpz.onrender.com",
 ).split(",")
 
 # ---------------------------------------------------------------------------
