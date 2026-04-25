@@ -386,26 +386,26 @@ import dj_database_url  # pip install dj-database-url
 #         conn_health_checks=True,  # discard stale connections automatically
 #     )
 # }
-# # DATABASES ={
-# #     'default': dj_database_url.parse('postgresql://edprintingdatabase_92df_user:WHlyxLF4PD9ROtWu5kT0Vei0mssav1Bf@dpg-d7gd7o1o3t8c73c638ug-a.oregon-postgres.render.com/edprintingdatabase_92df')
-# # }
-DATABASES = {
-    'default': {
-        'ENGINE': os.getenv('DJANGO_DB_ENGINE', 'django.db.backends.sqlite3'),
-        'NAME': os.getenv('DJANGO_DB_NAME', BASE_DIR / 'db.sqlite3'),
-        'USER': os.getenv('DJANGO_DB_USER', ''),
-        'PASSWORD': os.getenv('DJANGO_DB_PASSWORD', ''),
-        'HOST': os.getenv('DJANGO_DB_HOST', ''),
-        'PORT': os.getenv('DJANGO_DB_PORT', ''),
-        # ── Keep DB connections alive for 60 s instead of reconnecting per request
-        'CONN_MAX_AGE': 60,
-        'OPTIONS': {
-            # SQLite: WAL mode allows reads & writes to run concurrently
-            # (ignored by Postgres/MySQL but harmless)
-            'timeout': 20,
-        },
-    }
+DATABASES ={
+    'default': dj_database_url.parse('postgresql://sposdatabase_user:HvifBR8DPHkvGzrVCP5zIbQn6rGOVMJC@dpg-d7mdogreo5us73eoj2ug-a.oregon-postgres.render.com/sposdatabase')
 }
+# DATABASES = {
+#     'default': {
+#         'ENGINE': os.getenv('DJANGO_DB_ENGINE', 'django.db.backends.sqlite3'),
+#         'NAME': os.getenv('DJANGO_DB_NAME', BASE_DIR / 'db.sqlite3'),
+#         'USER': os.getenv('DJANGO_DB_USER', ''),
+#         'PASSWORD': os.getenv('DJANGO_DB_PASSWORD', ''),
+#         'HOST': os.getenv('DJANGO_DB_HOST', ''),
+#         'PORT': os.getenv('DJANGO_DB_PORT', ''),
+#         # ── Keep DB connections alive for 60 s instead of reconnecting per request
+#         'CONN_MAX_AGE': 60,
+#         'OPTIONS': {
+#             # SQLite: WAL mode allows reads & writes to run concurrently
+#             # (ignored by Postgres/MySQL but harmless)
+#             'timeout': 20,
+#         },
+#     }
+# }
 # SQLite tuning (only active when using the sqlite fallback locally)
 # if DATABASES["default"]["ENGINE"] == "django.db.backends.sqlite3":
 #     DATABASES["default"].setdefault("OPTIONS", {})["timeout"] = 20
