@@ -6,13 +6,25 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.views import TokenRefreshView
 from myapp import views
 from myapp.views import AvailableStockItemsView, AvailableStockItemsView2, DataEntryListCreateView, CustomTokenObtainPairView, DebtEntryViewSet, MonthlyReportView, MonthlyReportView2, RestockView, StockItemDetailView, StockItemListCreateView, StockItemListCreateView2, StockItemListCreateView2a, StockItemListCreateViewa, StockReportView, StockReportView2, UserEntryViewSet, UserEntryViewSet2, UserEntryViewSet2a, UserEntryViewSetExpense, UserEntryViewSetExpensea, UserEntryViewSeta, WeeklyReportView, YearlyReportView, update_preferences
+# In your myproject/urls.py — add this to apply the refresh throttle
+
+from rest_framework_simplejwt.views import TokenRefreshView, TokenObtainPairView
+from myapp.throttles import TokenRefreshThrottle
+
+
+
+class ThrottledTokenRefreshView(TokenRefreshView):
+    throttle_classes = [TokenRefreshThrottle]
+
+
 
 
 urlpatterns = [
     
     path('admin/', admin.site.urls),
     path('api/', include('myapp.urls')),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path("api/token/refresh/", ThrottledTokenRefreshView.as_view()),
+    # path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/stock/report/', StockReportView.as_view(), name='stock-report'),
     path('api/stock/report2/', StockReportView2.as_view(), name='stock-report'),
