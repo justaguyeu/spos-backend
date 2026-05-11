@@ -1077,10 +1077,10 @@ from django.db.models import F, Sum
 
 class Company(models.Model):
     name = models.CharField(max_length=200, unique=True)
-    owner = models.OneToOneField(
+    owner = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='owned_company',
+        related_name='owned_companies',
     )
     is_active = models.BooleanField(
         default=False,
@@ -1175,10 +1175,11 @@ class CompanyMembership(models.Model):
         ('admin', 'Company Admin'),
         ('staff', 'Staff'),
     ]
-    user = models.OneToOneField(
+    # ForeignKey (was OneToOneField) so one user can belong to multiple companies
+    user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='membership',
+        related_name='memberships',
     )
     company = models.ForeignKey(
         Company,
@@ -1190,6 +1191,7 @@ class CompanyMembership(models.Model):
 
     class Meta:
         ordering = ['company', 'role']
+        unique_together = ('user', 'company')  # one membership record per user-company pair
 
     def __str__(self):
         return f"{self.user.username} @ {self.company.name} ({self.role})"
@@ -1306,6 +1308,12 @@ class StockItem(models.Model):
     quantity_used = models.PositiveIntegerField(default=0)
     price_per_unit = models.DecimalField(max_digits=10, decimal_places=2)
     discount_price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    # ── Profit analysis fields ──────────────────────────────────────────────
+    buying_price  = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True,
+                                        help_text='Cost to acquire one unit of this stock.')
+    selling_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True,
+                                        help_text='Price at which one unit is sold to customers.')
+    # ───────────────────────────────────────────────────────────────────────
     added_date = models.DateField()
     restock_quantity = models.PositiveIntegerField(default=0)
     last_restock_date = models.DateField(null=True, blank=True)
@@ -1331,6 +1339,19 @@ class StockItem(models.Model):
 
     def get_month(self):
         return self.added_date.strftime('%Y-%m')
+
+    def profit_per_unit(self):
+        """Profit = selling_price - buying_price.  Returns None if either is unset."""
+        if self.selling_price is not None and self.buying_price is not None:
+            return self.selling_price - self.buying_price
+        return None
+
+    def margin_percent(self):
+        """Gross margin %.  Returns None if selling_price is 0 or unset."""
+        profit = self.profit_per_unit()
+        if profit is not None and self.selling_price and self.selling_price != 0:
+            return round((profit / self.selling_price) * 100, 2)
+        return None
 
     def save(self, *args, **kwargs):
         should_notify = False
@@ -1367,6 +1388,12 @@ class StockItem2(models.Model):
     area_used_in_square_meters = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     price_per_square_meter = models.DecimalField(max_digits=10, decimal_places=2)
     discount_price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    # ── Profit analysis fields ──────────────────────────────────────────────
+    buying_price  = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True,
+                                        help_text='Cost to acquire one sqm of this stock.')
+    selling_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True,
+                                        help_text='Price at which one sqm is sold to customers.')
+    # ───────────────────────────────────────────────────────────────────────
     added_date = models.DateField()
     restock_area_in_square_meters = models.PositiveIntegerField(default=0)
     last_restock_date = models.DateField(null=True, blank=True)
@@ -1392,6 +1419,19 @@ class StockItem2(models.Model):
 
     def get_month(self):
         return self.added_date.strftime('%Y-%m')
+
+    def profit_per_sqm(self):
+        """Profit per sqm = selling_price - buying_price."""
+        if self.selling_price is not None and self.buying_price is not None:
+            return self.selling_price - self.buying_price
+        return None
+
+    def margin_percent(self):
+        """Gross margin %.  Returns None if selling_price is 0 or unset."""
+        profit = self.profit_per_sqm()
+        if profit is not None and self.selling_price and self.selling_price != 0:
+            return round((profit / self.selling_price) * 100, 2)
+        return None
 
     def save(self, *args, **kwargs):
         should_notify = False

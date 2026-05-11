@@ -128,6 +128,7 @@ from .models import (
 )
 
 
+
 # ---------------------------------------------------------------------------
 # Company & Subscription Serializers
 # ---------------------------------------------------------------------------
@@ -203,6 +204,30 @@ class CompanyRegistrationSerializer(serializers.Serializer):
         CompanyMembership.objects.create(user=user, company=company, role='admin')
         return company
 
+class AuthenticatedCompanyRegistrationSerializer(serializers.Serializer):
+    company_name = serializers.CharField(max_length=200)
+    email = serializers.EmailField(required=False, allow_blank=True)
+    phone_number = serializers.CharField(max_length=20, required=False, allow_blank=True)
+    business_location = serializers.CharField(max_length=255, required=False, allow_blank=True)
+
+    def validate_company_name(self, value):
+        if Company.objects.filter(name__iexact=value).exists():
+            raise serializers.ValidationError("A company with this name already exists.")
+        return value
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        company = Company.objects.create(
+            name=validated_data['company_name'],
+            owner=user,
+            is_active=False,
+            email=validated_data.get('email', ''),
+            phone_number=validated_data.get('phone_number', ''),
+            business_location=validated_data.get('business_location', ''),
+        )
+        CompanyMembership.objects.create(user=user, company=company, role='admin')
+        return company
+
 class PaymentRecordSerializer(serializers.ModelSerializer):
     recorded_by_username = serializers.CharField(source='recorded_by.username', read_only=True)
     company_name = serializers.CharField(source='company.name', read_only=True)
@@ -220,10 +245,11 @@ class PaymentRecordSerializer(serializers.ModelSerializer):
 class CompanyMembershipSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True)
     user_id = serializers.IntegerField(source='user.id', read_only=True)
+    company_name = serializers.CharField(source='company.name', read_only=True)
 
     class Meta:
         model = CompanyMembership
-        fields = ['id', 'user_id', 'username', 'company', 'role', 'created_at']
+        fields = ['id', 'user_id', 'username', 'company', 'company_name', 'role', 'created_at']
         read_only_fields = ['created_at']
 
 
@@ -311,27 +337,51 @@ class DataEntrySerializer(serializers.ModelSerializer):
 
 
 class StockItemSerializer(serializers.ModelSerializer):
-    month = serializers.SerializerMethodField()
+    month          = serializers.SerializerMethodField()
+    profit_per_unit = serializers.SerializerMethodField()
+    margin_percent  = serializers.SerializerMethodField()
 
     class Meta:
         model = StockItem
-        fields = ['id', 'name', 'quantity', 'price_per_unit', 'added_date', 'month',
-                  'restock_quantity', 'last_restock_date']
+        fields = [
+            'id', 'name', 'quantity', 'price_per_unit', 'added_date', 'month',
+            'restock_quantity', 'last_restock_date',
+            'buying_price', 'selling_price', 'profit_per_unit', 'margin_percent',
+        ]
 
     def get_month(self, obj):
         return obj.get_month()
+
+    def get_profit_per_unit(self, obj):
+        p = obj.profit_per_unit()
+        return float(p) if p is not None else None
+
+    def get_margin_percent(self, obj):
+        return obj.margin_percent()
 
 
 class StockItemSerializer2(serializers.ModelSerializer):
-    month = serializers.SerializerMethodField()
+    month          = serializers.SerializerMethodField()
+    profit_per_sqm = serializers.SerializerMethodField()
+    margin_percent  = serializers.SerializerMethodField()
 
     class Meta:
         model = StockItem2
-        fields = ['id', 'stock_name', 'area_in_square_meters', 'price_per_square_meter',
-                  'added_date', 'month', 'restock_area_in_square_meters', 'last_restock_date']
+        fields = [
+            'id', 'stock_name', 'area_in_square_meters', 'price_per_square_meter',
+            'added_date', 'month', 'restock_area_in_square_meters', 'last_restock_date',
+            'buying_price', 'selling_price', 'profit_per_sqm', 'margin_percent',
+        ]
 
     def get_month(self, obj):
         return obj.get_month()
+
+    def get_profit_per_sqm(self, obj):
+        p = obj.profit_per_sqm()
+        return float(p) if p is not None else None
+
+    def get_margin_percent(self, obj):
+        return obj.margin_percent()
 
 
 class UserEntrySerializer(serializers.ModelSerializer):
@@ -424,3 +474,28 @@ class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
         fields = ['id', 'message', 'is_read', 'created_at', 'stock_item']
+
+
+# ---------------------------------------------------------------------------
+# User Companies Serializer — used by the company switcher
+# ---------------------------------------------------------------------------
+
+class UserCompanySerializer(serializers.ModelSerializer):
+    """
+    Returns the company info for a single CompanyMembership row.
+    Used by /company/my-companies/ so the frontend can populate the switcher.
+    """
+    company_id   = serializers.IntegerField(source='company.id',   read_only=True)
+    company_name = serializers.CharField(source='company.name',   read_only=True)
+    is_access_valid = serializers.SerializerMethodField()
+    days_until_expiry = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CompanyMembership
+        fields = ['company_id', 'company_name', 'role', 'is_access_valid', 'days_until_expiry']
+
+    def get_is_access_valid(self, obj):
+        return obj.company.is_access_valid()
+
+    def get_days_until_expiry(self, obj):
+        return obj.company.days_until_expiry()

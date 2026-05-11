@@ -615,6 +615,7 @@ CORS_ALLOW_HEADERS = [
     "user-agent",
     "x-csrftoken",
     "x-requested-with",
+    "x-company-id",
 ]
 
 CSRF_TRUSTED_ORIGINS = os.getenv(

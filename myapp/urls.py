@@ -58,9 +58,10 @@ from myapp import views
 urlpatterns = [
 
     # -----------------------------------------------------------------------
-    # COMPANY REGISTRATION  (public — no auth needed)
+    # COMPANY REGISTRATION
     # -----------------------------------------------------------------------
     path('company/register/', views.CompanyRegisterView.as_view(), name='company-register'),
+    path('company/register-new/', views.AuthenticatedCompanyRegisterView.as_view(), name='company-register-new'),
     path('company/profile/', views.CompanyProfileView.as_view(), name='company-profile'),
 
     # -----------------------------------------------------------------------
@@ -79,6 +80,7 @@ urlpatterns = [
     # -----------------------------------------------------------------------
     path('company/staff/',              views.CompanyStaffListCreateView.as_view(), name='company-staff-list'),
     path('company/staff/<int:user_id>/', views.CompanyStaffDeleteView.as_view(),    name='company-staff-delete'),
+    path('company/my-companies/',        views.UserCompaniesView.as_view(),          name='my-companies'),
 
     # -----------------------------------------------------------------------
     # DATA ENTRY (all scoped to the authenticated user's company)
